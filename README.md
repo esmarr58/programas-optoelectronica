@@ -8,6 +8,14 @@ Cada vez que un objeto **cruza el haz** entre el LED IR emisor y el
 fototransistor **WP7113P3C**, se incrementa una cuenta **0 → 9 → 0** que se
 muestra en un **display de 7 segmentos de cátodo común**.
 
+## Reporte de la práctica (plantilla para el alumno)
+
+En [`reporte-guiado/`](reporte-guiado/) está la **plantilla de reporte guiado** de la
+Práctica 2 (DOCX editable + PDF). El alumno la llena con el paso a paso, **fotos de
+evidencia** de cada paso, las **mediciones** (incluida la **corriente de colector a 5
+distancias**), la comparación de alcance **LED rojo vs. IR**, y las **5 preguntas
+teóricas** que le tocaron de un banco de 50. Es el documento que se entrega como reporte.
+
 ## Los dos programas
 
 | Carpeta | Modo del transistor | Cómo decide 0/1 | Ejercicio del deck |
