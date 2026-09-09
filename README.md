@@ -8,13 +8,14 @@ Cada vez que un objeto **cruza el haz** entre el LED IR emisor y el
 fototransistor **WP7113P3C**, se incrementa una cuenta **0 → 9 → 0** que se
 muestra en un **display de 7 segmentos de cátodo común**.
 
-## Reporte de la práctica (plantilla para el alumno)
+## Guía guiada de la práctica (se llena y se entrega)
 
-En [`reporte-guiado/`](reporte-guiado/) está la **plantilla de reporte guiado** de la
-Práctica 2 (DOCX editable + PDF). El alumno la llena con el paso a paso, **fotos de
-evidencia** de cada paso, las **mediciones** (incluida la **corriente de colector a 5
-distancias**), la comparación de alcance **LED rojo vs. IR**, y las **5 preguntas
-teóricas** que le tocaron de un banco de 50. Es el documento que se entrega como reporte.
+En [`guia-practica2/`](guia-practica2/) está la **guía guiada** de la Práctica 2 (DOCX
+editable + PDF). La P2 **no lleva reporte aparte**: el alumno llena esta misma guía —
+cálculo de **R1** y **R_L**, paso a paso con **fotos** de evidencia, mediciones (incluida
+la **corriente de colector a 5 distancias**), armado primero con el **LED IR** y prueba del
+**rojo al final**, y las **5 preguntas** teóricas que le tocaron de un banco de 50 — y la
+entrega como **un solo PDF**.
 
 ## Los dos programas
 
