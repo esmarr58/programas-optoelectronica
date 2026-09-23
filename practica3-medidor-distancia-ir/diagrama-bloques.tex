@@ -1,0 +1,139 @@
+% ===========================================================================
+%  Diagrama a bloques - Practica 3: Medidor de distancia IR (fototransistor)
+%  Programa ESP32-S3 (practica3_medidor_distancia.ino)
+%  Optoelectronica (V3736) - Dr. Ruben Estrada Marmolejo, CUCEI-UDG
+% ===========================================================================
+\documentclass[border=12pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric, calc, fit, backgrounds}
+
+% ---------- Paleta ----------
+\definecolor{colEntrada}{HTML}{1F6FB2}   % entrada / ADC (azul)
+\definecolor{colEntradaBg}{HTML}{E3F0FA}
+\definecolor{colConv}{HTML}{0E8A6A}      % conversiones (verde)
+\definecolor{colConvBg}{HTML}{E1F5EE}
+\definecolor{colModelo}{HTML}{B5651D}    % modelos (naranja/ocre)
+\definecolor{colModeloBg}{HTML}{FBEEDD}
+\definecolor{colSalida}{HTML}{6A3FB5}    % salida (morado)
+\definecolor{colSalidaBg}{HTML}{EEE6F8}
+\definecolor{colCaptura}{HTML}{B32651}   % captura -> Sheets (magenta)
+\definecolor{colCapturaBg}{HTML}{FBE3EC}
+\definecolor{colSetup}{HTML}{555F6B}     % setup (gris)
+\definecolor{colSetupBg}{HTML}{EDEFF2}
+\definecolor{colLinea}{HTML}{2B2F36}
+
+\begin{document}
+\begin{tikzpicture}[
+  font=\sffamily,
+  >=Latex,
+  node distance=8mm and 12mm,
+  every node/.style={transform shape},
+  base/.style={rounded corners=3pt, draw, line width=0.7pt, align=center,
+               inner sep=5pt, minimum height=10mm, text width=34mm},
+  titulo/.style={font=\sffamily\bfseries},
+  entrada/.style={base, draw=colEntrada, fill=colEntradaBg, text=colLinea},
+  setup/.style={base, draw=colSetup, fill=colSetupBg, text=colLinea},
+  conv/.style={base, draw=colConv, fill=colConvBg, text=colLinea},
+  modelo/.style={base, draw=colModelo, fill=colModeloBg, text=colLinea},
+  salida/.style={base, draw=colSalida, fill=colSalidaBg, text=colLinea},
+  captura/.style={base, draw=colCaptura, fill=colCapturaBg, text=colLinea},
+  disp/.style={base, draw=colSetup, fill=white, text=colLinea, text width=30mm},
+  flecha/.style={->, line width=0.9pt, draw=colLinea},
+  flechaCap/.style={->, line width=0.9pt, draw=colCaptura},
+  etiq/.style={font=\sffamily\scriptsize\itshape, text=colLinea, fill=white,
+               inner sep=1pt}
+]
+
+% ================= FILA SUPERIOR: entrada y setup =================
+\node[entrada] (foto) {\textbf{Fototransistor}\\ (colector)\\ {\scriptsize Vout $=$ VCC $-$ Ic$\cdot$Rc}};
+\node[entrada, right=of foto] (adc) {\textbf{ADC GPIO10}\\ {\scriptsize ADC1\_CH9}\\ 12 bits, 12 dB};
+\node[setup, right=16mm of adc] (setup) {\textbf{setup()}\\ {\scriptsize Serial 115200}\\ {\scriptsize config. ADC + guia}};
+
+% ================= LECTURA =================
+\node[conv, below=of adc] (lectura) {\textbf{leerCrudoPromedio()}\\ {\scriptsize promedio de 16}\\ raw (0..4095)};
+
+% ================= CONVERSIONES (dos salidas paralelas del raw) =====
+\node[conv, below left=10mm and -2mm of lectura] (vsin)
+   {\textbf{V sin calibrar}\\ {\scriptsize $3300\cdot$raw$/4095$}\\ {[mV]}};
+\node[conv, below right=10mm and -2mm of lectura] (vcal)
+   {\textbf{V calibrado}\\ {\scriptsize analogRead}\\ {\scriptsize MilliVolts()} [mV]};
+
+% ================= LINEALIZACION =================
+\node[conv, below=14mm of vcal] (lin)
+   {\textbf{Linealizacion}\\ {\scriptsize Vsig $=$ VCC $-$ Vout}\\ {\scriptsize X $=1/\sqrt{\text{Vsig}}$}};
+
+% ================= MODELOS (dos ramas) =================
+\node[modelo, below left=14mm and 12mm of lin, text width=32mm] (mlineal)
+   {\textbf{Modelo LINEAL}\\ {\scriptsize d $=$ m$\cdot$X $+$ b}\\ {\scriptsize m, b del alumno}};
+\node[modelo, below=14mm of lin, text width=32mm] (mcuad)
+   {\textbf{Modelo CUADRATICO}\\ {\scriptsize d $=$ aV$^2$+bV+c}\\ {\scriptsize a,b,c de Sheets}};
+
+% ================= SALIDA =================
+\node[salida, below=12mm of $(mlineal)!0.5!(mcuad)$] (monitor)
+   {\textbf{Monitor Serial}\\ {\scriptsize raw, Vsin, Vcal, Vsig,}\\ {\scriptsize X, d\_lineal, d\_cuad}};
+
+% ================= RAMA DE CAPTURA / CALIBRACION =================
+\node[captura, right=44mm of lin, text width=32mm] (captura)
+   {\textbf{capturarPunto()}\\ {\scriptsize comando ``punto <cm>''}\\ {\scriptsize fila CSV:}\\ {\scriptsize d\_real, raw, V\_cal, X}};
+\node[captura, below=9mm of captura, text width=32mm] (sheets)
+   {\textbf{Google Sheets}\\ {\scriptsize minimos cuadrados}\\ {\scriptsize $\to$ m, b y cuadratica}};
+\node[captura, below=9mm of sheets, text width=32mm] (escribe)
+   {\textbf{Se escriben coef.}\\ {\scriptsize en el programa}\\ {\scriptsize (PENDIENTE/OFFSET, coefA..C)}};
+
+% ================= DESPACHADOR (loop) =================
+\node[disp, above=13mm of captura, text width=38mm] (loop)
+   {\textbf{loop(): despachador}\\ {\scriptsize lee Serial}\\ {\scriptsize leer / stream / punto <cm> / coef / ayuda}};
+
+% ===================== FLECHAS DE FLUJO =====================
+\draw[flecha] (foto) -- (adc);
+\draw[flecha] (adc) -- (lectura);
+
+% raw -> dos conversiones
+\draw[flecha] (lectura.south) -- ++(0,-3mm) -| (vsin.north);
+\draw[flecha] (lectura.south) -- ++(0,-3mm) -| (vcal.north);
+
+% V calibrado -> linealizacion
+\draw[flecha] (vcal) -- (lin);
+
+% linealizacion -> modelo lineal (usa X)
+\draw[flecha] (lin.south) -- ++(0,-3mm) -| (mlineal.north)
+     node[etiq, pos=0.25] {X};
+% V calibrado -> modelo cuadratico (usa V, no X)
+\draw[flecha] (vcal.east) -- ++(0.8,0) |- (mcuad.east)
+     node[etiq, pos=0.25] {V};
+
+% modelos -> monitor
+\draw[flecha] (mlineal.south) |- ($(monitor.north)+(-8mm,3mm)$) -- ($(monitor.north)+(-8mm,0)$);
+\draw[flecha] (mcuad.south)   |- ($(monitor.north)+( 8mm,3mm)$) -- ($(monitor.north)+( 8mm,0)$);
+
+% V sin calibrar -> monitor (se reporta directo)
+\draw[flecha] (vsin.west) .. controls +(-1.4,0) and +(-1.4,0) .. (monitor.west)
+     node[etiq, pos=0.5] {se reporta};
+
+% ---- rama de captura ----
+\draw[flechaCap] (loop) -- (captura);
+\draw[flechaCap] (lectura.east) .. controls +(2.0,0) and +(0,1.4) .. (captura.north)
+     node[etiq, pos=0.5] {raw};
+\draw[flechaCap] (captura) -- (sheets) node[etiq, pos=0.5] {pegar CSV};
+\draw[flechaCap] (sheets) -- (escribe);
+% coeficientes vuelven a los modelos
+\draw[flechaCap, dashed] (escribe.south) -- ++(0,-4mm) -| ([xshift=6mm]mcuad.south)
+     node[etiq, pos=0.25] {coef. finales};
+
+% ===================== TITULO Y LEYENDA =====================
+\node[titulo, font=\sffamily\bfseries\large, text=colLinea, above=2mm of foto.north west, anchor=south west]
+   (tit) {Programa ESP32-S3 -- Medidor de distancia IR (Practica 3, Optoelectronica)};
+
+% Fondo agrupador de la rama de captura/calibracion
+\begin{scope}[on background layer]
+  \node[rounded corners=4pt, fill=colCapturaBg!45, draw=colCaptura!40, dashed,
+        inner sep=6mm, fit=(loop)(captura)(sheets)(escribe),
+        label={[colCaptura,font=\sffamily\bfseries\small]above:CALIBRACION (menu + Google Sheets)}] {};
+\end{scope}
+
+\end{tikzpicture}
+\end{document}
