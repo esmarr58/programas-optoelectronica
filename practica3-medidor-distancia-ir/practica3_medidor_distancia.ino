@@ -30,8 +30,8 @@ const int   N_PROMEDIO = 16;      // muestras que se promedian por lectura
 
 // ---------- Coeficientes que el ALUMNO obtiene en Google Sheets y PEGA aqui ----------
 // Modelo LINEAL sobre la variable linealizada X = 1/sqrt(Vsig):   d[cm] = m*X + b
-float PENDIENTE = 2.540f;    // m  (EJEMPLO; reemplaza con tu valor de la hoja)
-float OFFSET    = -1.376f;   // b  (EJEMPLO; reemplaza con tu valor de la hoja)
+float PENDIENTE = 2.581f;    // m  (EJEMPLO del deck, 10 medidas; reemplaza con el tuyo)
+float OFFSET    = -1.463f;   // b  (EJEMPLO del deck; reemplaza con el tuyo)
 // Modelo CUADRATICO (regresion polinomial en la hoja):  d[cm] = coefA*V^2 + coefB*V + coefC
 // (NO uses A2/A1/A0: en Arduino son alias de pines analogicos.)
 float coefA = 0.0f, coefB = 0.0f, coefC = 0.0f;   // (rellena con los tuyos)
