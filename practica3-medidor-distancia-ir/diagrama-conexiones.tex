@@ -1,0 +1,163 @@
+% ===========================================================================
+%  Diagrama de conexiones - Practica 3: Medidor de distancia IR
+%  ESP32-S3 + fototransistor (transmision directa) y TCRT5000 (reflectancia)
+%  Optoelectronica (V3736) - Dr. Ruben Estrada Marmolejo, CUCEI-UDG
+% ===========================================================================
+\documentclass[border=12pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage{amsmath}
+\usepackage{circuitikz}
+\usetikzlibrary{positioning, arrows.meta, calc, fit, backgrounds}
+
+% ---------- Paleta ----------
+\definecolor{colVcc}{HTML}{C62828}     % rojo (3V3)
+\definecolor{colGnd}{HTML}{2B2F36}     % negro (GND)
+\definecolor{colSig}{HTML}{1F6FB2}     % azul (senal al ADC)
+\definecolor{colIR}{HTML}{6A3FB5}      % morado (haz IR)
+\definecolor{colBoardBg}{HTML}{E3F0FA}
+\definecolor{colBoard}{HTML}{1F6FB2}
+\definecolor{colBoxA}{HTML}{0E8A6A}
+\definecolor{colBoxABg}{HTML}{E9F7F1}
+\definecolor{colBoxB}{HTML}{B5651D}
+\definecolor{colBoxBBg}{HTML}{FBF0E1}
+\definecolor{colLinea}{HTML}{2B2F36}
+
+\ctikzset{
+  bipoles/thickness=1.1,
+  resistors/scale=0.7,
+  transistors/scale=0.85,
+}
+
+\begin{document}
+\begin{tikzpicture}[
+  font=\sffamily,
+  >=Latex,
+  Vcc/.style={color=colVcc, line width=1.0pt},
+  Sig/.style={color=colSig, line width=1.1pt},
+  Gnd/.style={color=colGnd, line width=1.0pt},
+  cable/.style={line width=1.0pt, color=colLinea},
+  etiqp/.style={font=\sffamily\scriptsize, text=colLinea},
+  port/.style={font=\sffamily\scriptsize\bfseries, text=colSig},
+  tit/.style={font=\sffamily\bfseries\large, text=colLinea},
+  sub/.style={font=\sffamily\bfseries, text=colLinea}
+]
+
+% ===================================================================
+%  Leyenda de pines del ESP32-S3 (referencia, arriba a la izquierda)
+% ===================================================================
+\node[draw=colBoard, fill=colBoardBg, rounded corners=4pt, line width=1pt,
+      align=left, text=colLinea, inner sep=6pt] (esp) at (0.2,4.4)
+  {\textbf{\textcolor{colBoard}{ESP32-S3}} (Dev Module) --- pines usados:\\[2pt]
+   \scriptsize
+   \textcolor{colVcc}{\textbf{3V3}} (alimentación) \quad
+   \textcolor{colSig}{\textbf{GPIO10 = ADC1\_CH9}} (entrada $V_{out}$) \quad
+   \textcolor{colGnd}{\textbf{GND}}};
+
+% ===================================================================
+%  METODO A: TRANSMISION DIRECTA
+%     Emisor IR (LED + Rs)  enfrentado a  fototransistor (Rc + colector)
+% ===================================================================
+\begin{scope}[shift={(0,0)}]
+  % rieles
+  \coordinate (Atop)  at (0.0, 2.4);   % 3V3
+  \coordinate (Abot)  at (0.0,-2.2);   % GND
+  \draw[Vcc] (Atop) -- (3.0,2.4);
+  \draw[Gnd] (Abot) -- (3.0,-2.2);
+  \node[etiqp, text=colVcc, anchor=south east] at (3.0,2.42) {3V3};
+  \node[etiqp, text=colGnd, anchor=north east] at (3.0,-2.22) {GND};
+
+  % --- pierna emisor (izq): Rs + LED IR ---
+  \draw[Vcc] (0.6,2.4) node[circ,fill=colVcc]{} to[R, l_={$R_s\!\approx\!220\,\Omega$}] (0.6,0.8) coordinate (Aled);
+  \draw[cable,color=colIR] (Aled) to[leD, l_=LED IR, color=colIR] (0.6,-0.9) coordinate (Aledk);
+  \draw[Gnd] (Aledk) -- (0.6,-2.2) node[circ,fill=colGnd]{};
+
+  % --- pierna receptor (der): Rc + fototransistor ---
+  \draw[Vcc] (2.4,2.4) node[circ,fill=colVcc]{} to[R, l={$R_c\!=\!10\,\mathrm{k}\Omega$}] (2.4,0.9) coordinate (Rcol);
+  \node[npn, anchor=C] (qa) at (Rcol) {};
+  \node[circ] at (Rcol){};
+  \draw[Gnd] (qa.E) -- (qa.E |- Abot) node[circ,fill=colGnd]{};
+  % Vout -> puerto GPIO10
+  \draw[Sig] (Rcol) -- (3.6,0.9);
+  \node[port, anchor=west] at (3.62,0.9) {$V_{out}\to$};
+  \node[port, anchor=west] at (3.62,0.55) {GPIO10};
+
+  % haz IR (LED -> base del fototransistor)
+  \draw[->, color=colIR, dashed, line width=0.9pt]
+     (0.95,-0.05) -- (qa.B)
+     node[etiqp, color=colIR, midway, above] {haz IR};
+\end{scope}
+
+% ===================================================================
+%  METODO B: REFLECTANCIA con TCRT5000
+% ===================================================================
+\begin{scope}[shift={(8.6,0)}]
+  \coordinate (Btop) at (0.0, 2.4);
+  \coordinate (Bbot) at (0.0,-2.2);
+  \draw[Vcc] (Btop) -- (3.0,2.4);
+  \draw[Gnd] (Bbot) -- (3.0,-2.2);
+  \node[etiqp, text=colVcc, anchor=south east] at (3.0,2.42) {3V3};
+  \node[etiqp, text=colGnd, anchor=north east] at (3.0,-2.22) {GND};
+
+  % modulo TCRT5000
+  \node[draw=colBoxB, fill=colBoxBBg, rounded corners=3pt, line width=0.9pt,
+        minimum width=20mm, minimum height=16mm, align=center, text=colLinea]
+        (tcrt) at (1.5,-0.8) {\textbf{TCRT5000}\\[1pt]{\scriptsize emisor IR +}\\{\scriptsize fototransistor}};
+
+  % pierna emisor del modulo (izq): Rs
+  \draw[Vcc] (0.6,2.4) node[circ,fill=colVcc]{} to[R, l_={$R_s\!\approx\!220\,\Omega$}] (0.6,0.2) -- (0.6,-0.2) coordinate (Bea);
+  \draw[cable,color=colIR] (Bea) -- (tcrt.north -| 0.6,0);   % entra al modulo (LED)
+  % pierna receptor del modulo (der): Rc + tap Vout
+  \draw[Vcc] (2.4,2.4) node[circ,fill=colVcc]{} to[R, l={$R_c\!=\!10\,\mathrm{k}\Omega$}] (2.4,0.2) coordinate (Bc);
+  \node[circ] at (Bc){};
+  \draw[cable] (Bc) -- (tcrt.north -| 2.4,0);                % entra al modulo (colector)
+  % Vout -> puerto GPIO10
+  \draw[Sig] (Bc) -- (3.6,0.2);
+  \node[port, anchor=west] at (3.62,0.2) {$V_{out}\to$};
+  \node[port, anchor=west] at (3.62,-0.15) {GPIO10};
+  % GND del modulo
+  \draw[Gnd] (tcrt.south -| 0.9,0) |- (0.6,-2.2) node[circ,fill=colGnd]{};
+  \draw[Gnd] (tcrt.south -| 2.1,0) |- (2.4,-2.2) node[circ,fill=colGnd]{};
+
+  % objeto reflector + haces
+  \draw[line width=1.4pt, color=colLinea, fill=colLinea!12]
+     (3.9,-1.75) rectangle ++(0.3,1.55);
+  \node[etiqp, align=center] at (4.05,-2.15) {objeto reflector\\(a distancia $d$)};
+  \draw[->, color=colIR, dashed, line width=0.9pt]
+     ([yshift=2mm]tcrt.east) -- (3.85,-0.45) node[etiqp,color=colIR,midway,above,sloped]{IR emitido};
+  \draw[->, color=colIR, dashed, line width=0.9pt]
+     (3.85,-1.25) -- ([yshift=-3mm]tcrt.east) node[etiqp,color=colIR,midway,below,sloped]{IR reflejado};
+\end{scope}
+
+% ===================================================================
+%  Fondos + titulos de metodo
+% ===================================================================
+\coordinate (fA1) at (-0.6,-2.9);  \coordinate (fA2) at (5.0,3.6);
+\coordinate (fB1) at (8.0,-2.9);   \coordinate (fB2) at (13.9,3.6);
+\begin{scope}[on background layer]
+  \node[rounded corners=5pt, fill=colBoxABg, draw=colBoxA!55, dashed, line width=0.9pt,
+        fit=(fA1)(fA2)] (fitA) {};
+  \node[rounded corners=5pt, fill=colBoxBBg!70, draw=colBoxB!55, dashed, line width=0.9pt,
+        fit=(fB1)(fB2)] (fitB) {};
+\end{scope}
+\node[sub, text=colBoxA, anchor=south west] at (-0.4,3.05) {MÉTODO A --- Transmisión directa};
+\node[sub, text=colBoxB, anchor=south west] at (8.2,3.05) {MÉTODO B --- Reflectancia (TCRT5000)};
+
+% ===================================================================
+%  Titulo y leyenda de colores
+% ===================================================================
+\node[tit, anchor=south west] at (-0.6,5.1)
+  {Diagrama de conexiones --- Medidor de distancia IR (ESP32-S3, Práctica 3)};
+
+\node[etiqp, anchor=west] at (-0.6,-3.6)
+  {\textcolor{colVcc}{\rule{6mm}{1.3pt}}~3V3 \quad
+   \textcolor{colSig}{\rule{6mm}{1.3pt}}~$V_{out}\!\to$ GPIO10 (ADC1\_CH9) \quad
+   \textcolor{colGnd}{\rule{6mm}{1.3pt}}~GND \quad
+   \textcolor{colIR}{\rule{6mm}{1.3pt}}~haz infrarrojo};
+\node[etiqp, anchor=west, align=left] at (-0.6,-4.2)
+  {\itshape Nota: se usa \textbf{un método a la vez}; en ambos el colector se lee en GPIO10.
+   El fototransistor opera en \textbf{región activa}: $V_{out}=V_{CC}-I_C R_c$ (baja al recibir más luz).};
+
+\end{tikzpicture}
+\end{document}
