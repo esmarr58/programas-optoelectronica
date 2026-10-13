@@ -1,0 +1,150 @@
+% ===========================================================================
+%  Diagrama de conexiones - Practica 4: Convertidores de nivel y motor con PC817
+%  ESP32-S3 (GPIO4, GPIO5, GPIO6) + 3 x PC817 (DIP-4) + MOSFET + motor TT 5 V
+%  Optoelectronica (V3736) - Dr. Ruben Estrada Marmolejo, CUCEI-UDG
+%  Patas del PC817 (vista superior, muesca a la izquierda):
+%    1 = anodo (A)   2 = catodo (K)   3 = emisor (E)   4 = colector (C)
+% ===========================================================================
+\documentclass[border=12pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage{amsmath}
+\usepackage{circuitikz}
+\usetikzlibrary{positioning, arrows.meta, calc, fit, backgrounds}
+
+% ---------- Paleta (misma que la Practica 3) ----------
+\definecolor{colVcc}{HTML}{C62828}     % rojo (alimentaciones)
+\definecolor{colGnd}{HTML}{2B2F36}     % GND del lado ESP32
+\definecolor{colGndP}{HTML}{8E5A12}    % GND del lado potencia/campo (OTRA tierra)
+\definecolor{colSig}{HTML}{1F6FB2}     % azul (senales de la ESP32)
+\definecolor{colIR}{HTML}{6A3FB5}      % morado (luz dentro del PC817)
+\definecolor{colBoardBg}{HTML}{E3F0FA}
+\definecolor{colBoard}{HTML}{1F6FB2}
+\definecolor{colBoxA}{HTML}{0E8A6A}
+\definecolor{colBoxABg}{HTML}{E9F7F1}
+\definecolor{colBoxB}{HTML}{B5651D}
+\definecolor{colBoxBBg}{HTML}{FBF0E1}
+\definecolor{colBoxC}{HTML}{8E3B8E}
+\definecolor{colBoxCBg}{HTML}{F7ECF7}
+\definecolor{colLinea}{HTML}{2B2F36}
+
+\ctikzset{bipoles/thickness=1.1, resistors/scale=0.7, transistors/scale=0.9, diodes/scale=0.7}
+
+% PC817 en DIP-4: \pcok{nombre}{(x,y)} crea las anclas nombre-1 .. nombre-4
+\newcommand{\pcok}[2]{%
+  \node[draw=colLinea, line width=1pt, fill=white, minimum width=1.7cm, minimum height=2.0cm,
+        rounded corners=2pt] (#1) at #2 {};
+  \node[font=\sffamily\bfseries\scriptsize, text=colLinea] at (#1.center) {PC817};
+  \draw[colIR, -{Latex[length=1.4mm]}] ($(#1.center)+(-0.45,-0.35)$) -- ($(#1.center)+(0.45,-0.35)$);
+  \node[font=\sffamily\tiny, text=colIR] at ($(#1.center)+(0,-0.6)$) {luz};
+  \fill[colLinea] ($(#1.north west)+(0.18,-0.18)$) circle (1.5pt); % punto de la pata 1
+  \coordinate (#1-1) at ($(#1.west)+(0,0.55)$);
+  \coordinate (#1-2) at ($(#1.west)+(0,-0.55)$);
+  \coordinate (#1-4) at ($(#1.east)+(0,0.55)$);
+  \coordinate (#1-3) at ($(#1.east)+(0,-0.55)$);
+  \node[font=\sffamily\tiny, anchor=west] at (#1-1) {1 A};
+  \node[font=\sffamily\tiny, anchor=west] at (#1-2) {2 K};
+  \node[font=\sffamily\tiny, anchor=east] at (#1-4) {C 4};
+  \node[font=\sffamily\tiny, anchor=east] at (#1-3) {E 3};
+}
+
+\begin{document}
+\begin{tikzpicture}[
+  font=\sffamily, >=Latex,
+  Vcc/.style={color=colVcc, line width=1.0pt},
+  Sig/.style={color=colSig, line width=1.1pt},
+  Gnd/.style={color=colGnd, line width=1.0pt},
+  GndP/.style={color=colGndP, line width=1.0pt},
+  cable/.style={line width=1.0pt, color=colLinea},
+  etiqp/.style={font=\sffamily\scriptsize, text=colLinea},
+  tit/.style={font=\sffamily\bfseries\large, text=colLinea}
+]
+
+% ---------------- Titulo y leyenda de pines ----------------
+\node[tit] at (11.6,8.6) {Diagrama de conexiones --- Convertidores de nivel y motor con PC817 (ESP32-S3, Práctica 4)};
+\node[draw=colBoard, fill=colBoardBg, rounded corners=4pt, line width=1pt, align=left, text=colLinea,
+      inner sep=6pt, anchor=north west] at (-1.6,8.1)
+  {\textbf{\textcolor{colBoard}{ESP32-S3}} (Dev Module) --- pines usados:\quad
+   \scriptsize
+   \textcolor{colSig}{\textbf{GPIO4}} (salida C1) \quad
+   \textcolor{colSig}{\textbf{GPIO5}} (entrada C2) \quad
+   \textcolor{colSig}{\textbf{GPIO6}} (PWM C3) \quad
+   \textcolor{colVcc}{\textbf{3V3}} \quad
+   \textcolor{colGnd}{\textbf{GND\textsubscript{ESP}}}};
+
+% =================================================================
+%  CIRCUITO 1: 3.3 V -> 24 V
+% =================================================================
+\begin{scope}[shift={(0,0)}]
+\pcok{A}{(2.6,2.6)}
+% entrada (lado ESP32)
+\draw[Sig] (-0.4,3.15) node[left, font=\sffamily\scriptsize\bfseries, text=colSig]{GPIO4} to[R, l_={\scriptsize 220\,$\Omega$}] (A-1);
+\draw[Gnd] (A-2) -- ++(-0.6,0) -- ++(0,-1.2) node[ground]{} node[below=2pt, font=\sffamily\tiny]{GND\textsubscript{ESP}};
+% salida (lado 24 V)
+\draw[Vcc] (A-4) -- ++(0.9,0) coordinate(c1) to[R, l_={\scriptsize 10\,k$\Omega$}] ++(0,1.6) node[above, font=\sffamily\scriptsize\bfseries]{+24\,V};
+\draw[cable] (c1) -- ++(1.1,0) node[right, etiqp, align=left]{SALIDA\\0 / 24\,V};
+\fill (c1) circle (1.6pt);
+\draw[GndP] (A-3) -- ++(0.9,0) -- ++(0,-1.2) node[ground]{} node[below=2pt, font=\sffamily\tiny, text=colGndP]{GND\textsubscript{24}};
+\end{scope}
+
+% =================================================================
+%  CIRCUITO 2: 24 V -> 3.3 V
+% =================================================================
+\begin{scope}[shift={(8.2,0)}]
+\pcok{B}{(2.6,2.6)}
+\draw[Vcc] (-0.4,3.15) node[left, font=\sffamily\scriptsize\bfseries, align=right]{señal\\24\,V} to[R, l_={\scriptsize 4.7\,k$\Omega$ (1/2\,W)}] (B-1);
+\draw[GndP] (B-2) -- ++(-0.6,0) -- ++(0,-1.2) node[ground]{} node[below=2pt, font=\sffamily\tiny, text=colGndP]{GND\textsubscript{24}};
+\draw[Vcc] (B-4) -- ++(0.9,0) coordinate(c2) to[R, l_={\scriptsize 10\,k$\Omega$}] ++(0,1.6) node[above, font=\sffamily\scriptsize\bfseries]{3V3};
+\draw[Sig] (c2) -- ++(1.1,0) node[right, font=\sffamily\scriptsize\bfseries, text=colSig]{GPIO5};
+\fill (c2) circle (1.6pt);
+\draw[Gnd] (B-3) -- ++(0.9,0) -- ++(0,-1.2) node[ground]{} node[below=2pt, font=\sffamily\tiny]{GND\textsubscript{ESP}};
+\end{scope}
+
+% =================================================================
+%  CIRCUITO 3: PWM -> PC817 -> MOSFET -> motor
+% =================================================================
+\begin{scope}[shift={(16.4,0)}]
+\pcok{C}{(2.6,2.6)}
+\draw[Sig] (-0.4,3.15) node[left, font=\sffamily\scriptsize\bfseries, text=colSig]{GPIO6} to[R, l_={\scriptsize 220\,$\Omega$}] (C-1);
+\draw[Gnd] (C-2) -- ++(-0.6,0) -- ++(0,-1.2) node[ground]{} node[below=2pt, font=\sffamily\tiny]{GND\textsubscript{ESP}};
+% pull-up a +5 V y compuerta
+\draw[Vcc] (C-4) -- ++(0.9,0) coordinate(g) to[R, l_={\scriptsize 10\,k$\Omega$}] ++(0,1.6) node[above, font=\sffamily\scriptsize\bfseries]{+5\,V};
+\fill (g) circle (1.6pt);
+\node[nmos] (M) at (5.6,2.2) {};
+\draw[cable] (g) -- (M.G |- g) -- (M.G);
+\node[etiqp, anchor=south] at ($(g)!0.5!(M.G |- g)$) {compuerta};
+\node[font=\sffamily\tiny, anchor=west] at ($(M.east)+(0.05,0)$) {IRLZ44N};
+% motor y flyback
+\draw[cable] (M.D) -- ++(0,0.5) coordinate(dr);
+\node[circle, draw, line width=0.9pt, minimum size=0.8cm, font=\sffamily\small] (mot) at ($(dr)+(0,0.95)$) {M};
+\draw[cable] (dr) -- (mot.south);
+\draw[Vcc] (mot.north) -- ++(0,0.4) coordinate(vm);
+\draw[cable] (dr) -- ++(1.1,0) coordinate(dd) to[D, l_={\tiny flyback}, *-] (dd |- vm) -- (vm);
+\draw[Vcc] (dd |- vm) -- ++(0.5,0) node[right, font=\sffamily\scriptsize\bfseries]{+5\,V motor};
+\draw[GndP] (M.S) -- ++(0,-0.6) node[ground]{} node[below=2pt, font=\sffamily\tiny, text=colGndP]{GND\textsubscript{motor}};
+\draw[GndP] (C-3) -- ++(0.9,0) -- ++(0,-1.2) node[ground]{} node[below=2pt, font=\sffamily\tiny, text=colGndP]{GND\textsubscript{motor}};
+\end{scope}
+
+% ---------------- Recuadros de cada circuito ----------------
+\begin{scope}[on background layer]
+\node[draw=colBoxA, fill=colBoxABg, rounded corners=6pt, line width=1pt, dashed, minimum width=7.6cm, minimum height=6.0cm] at (2.3,3.0) {};
+\node[draw=colBoxB, fill=colBoxBBg, rounded corners=6pt, line width=1pt, dashed, minimum width=7.6cm, minimum height=6.0cm] at (10.5,3.0) {};
+\node[draw=colBoxC, fill=colBoxCBg, rounded corners=6pt, line width=1pt, dashed, minimum width=10.6cm, minimum height=6.0cm] at (20.4,3.0) {};
+\end{scope}
+\node[font=\sffamily\bfseries, text=colBoxA] at (2.3,5.65) {CIRCUITO 1 --- 3.3\,V $\rightarrow$ 24\,V};
+\node[font=\sffamily\bfseries, text=colBoxB] at (10.5,5.65) {CIRCUITO 2 --- 24\,V $\rightarrow$ 3.3\,V};
+\node[font=\sffamily\bfseries, text=colBoxC] at (20.4,5.65) {CIRCUITO 3 --- PWM del motor 5\,V};
+
+% ---------------- Leyenda ----------------
+\begin{scope}[shift={(-1.4,-0.6)}]
+\draw[Sig] (0,0) -- (0.6,0); \node[etiqp, anchor=west] at (0.7,0) {señal de la ESP32};
+\draw[Vcc] (3.4,0) -- (4.0,0); \node[etiqp, anchor=west] at (4.1,0) {alimentación};
+\draw[Gnd] (6.4,0) -- (7.0,0); \node[etiqp, anchor=west] at (7.1,0) {GND\textsubscript{ESP}};
+\draw[GndP] (8.9,0) -- (9.5,0); \node[etiqp, anchor=west] at (9.6,0) {GND\textsubscript{24} / GND\textsubscript{motor} (otra tierra)};
+\node[font=\sffamily\scriptsize\itshape, text=colLinea, anchor=west] at (0,-0.55)
+  {Regla: los cables negros (GND\textsubscript{ESP}) y los cafés (GND\textsubscript{24}, GND\textsubscript{motor}) \textbf{nunca} se tocan. Si se unen, se pierde el aislamiento galvánico.
+   Lógica invertida: LED encendido $\rightarrow$ colector (pata 4) en BAJO.};
+\end{scope}
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,112 @@
+% ===========================================================================
+%  Diagrama a bloques - Practica 4: Convertidores de nivel y motor con PC817
+%  Programa ESP32-S3 (practica4_convertidores_pc817.ino)
+%  Optoelectronica (V3736) - Dr. Ruben Estrada Marmolejo, CUCEI-UDG
+% ===========================================================================
+\documentclass[border=14pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric, calc, fit, backgrounds}
+
+% ---------- Paleta ----------
+\definecolor{colEsp}{HTML}{1F6FB2}       % ESP32 / firmware (azul)
+\definecolor{colEspBg}{HTML}{E3F0FA}
+\definecolor{colOpto}{HTML}{B5651D}      % barrera PC817 (ocre)
+\definecolor{colOptoBg}{HTML}{FBEEDD}
+\definecolor{colC1}{HTML}{0E8A6A}        % circuito 1 (verde)
+\definecolor{colC1Bg}{HTML}{E1F5EE}
+\definecolor{colC2}{HTML}{6A3FB5}        % circuito 2 (morado)
+\definecolor{colC2Bg}{HTML}{EEE6F8}
+\definecolor{colC3}{HTML}{B32651}        % circuito 3 motor (magenta)
+\definecolor{colC3Bg}{HTML}{FBE3EC}
+\definecolor{colSetup}{HTML}{555F6B}     % setup (gris)
+\definecolor{colSetupBg}{HTML}{EDEFF2}
+\definecolor{colLinea}{HTML}{2B2F36}
+
+\begin{document}
+\begin{tikzpicture}[
+  font=\sffamily,
+  >=Latex,
+  every node/.style={transform shape},
+  base/.style={rounded corners=3pt, draw, line width=0.7pt, align=center,
+               inner sep=4pt, minimum height=11mm, text width=30mm},
+  esp/.style={base, draw=colEsp, fill=colEspBg, text=colLinea},
+  setup/.style={base, draw=colSetup, fill=colSetupBg, text=colLinea, text width=40mm},
+  opto/.style={base, draw=colOpto, fill=colOptoBg, text=colLinea, text width=26mm},
+  c1/.style={base, draw=colC1, fill=colC1Bg, text=colLinea},
+  c2/.style={base, draw=colC2, fill=colC2Bg, text=colLinea},
+  c3/.style={base, draw=colC3, fill=colC3Bg, text=colLinea, text width=26mm},
+  flecha/.style={->, line width=0.9pt, draw=colLinea},
+  etiq/.style={font=\sffamily\scriptsize\itshape, text=colLinea, fill=white, inner sep=1pt}
+]
+
+% ----- Columnas (x) y carriles (y) -----
+\def\xCtrl{0}      % GPIO del ESP32
+\def\xOpto{5.4}    % barrera PC817
+\def\xPow{10.8}    % cargas / campo
+\def\xPowB{15.6}   % segunda etapa (motor)
+\def\yA{0}         % carril C1
+\def\yB{-2.6}      % carril C3 (motor)
+\def\yC{-5.2}      % carril C2
+
+% ================= FIRMWARE (cabecera) =================
+\node[setup] (loop) at (\xCtrl,2.7)
+   {\textbf{setup() + loop()}\\ {\scriptsize Serial 115200 \textbullet\ ledcAttach 1\,kHz}\\ {\scriptsize despachador: c1 / c2 / vel / stop}};
+
+% ================= CARRIL A: C1 (3.3 -> 24 V) =================
+\node[esp] (g1) at (\xCtrl,\yA) {\textbf{GPIO4 OUT}\\ {\scriptsize digitalWrite}};
+\node[opto] (o1) at (\xOpto,\yA) {\textbf{PC817 \#1}\\ {\scriptsize R\textsubscript{in}=220\,$\Omega$}};
+\node[c1] (load1) at (\xPow,\yA) {\textbf{Salida 24 V}\\ {\scriptsize R\textsubscript{C}=10\,k a +24\,V}\\ {\scriptsize nivel invertido}};
+
+% ================= CARRIL B: C3 (motor PWM) =================
+\node[esp] (g3) at (\xCtrl,\yB) {\textbf{GPIO6 PWM}\\ {\scriptsize ledcWrite 0..1023}\\ {\scriptsize compensa inv.}};
+\node[opto] (o3) at (\xOpto,\yB) {\textbf{PC817 \#3}\\ {\scriptsize R\textsubscript{in}=220\,$\Omega$}\\ {\scriptsize aisla el PWM}};
+\node[c3] (mosfet) at (\xPow,\yB) {\textbf{MOSFET + flyback}\\ {\scriptsize R\textsubscript{C}=10\,k a +5\,V}\\ {\scriptsize compuerta}};
+\node[c3] (motor) at (\xPowB,\yB) {\textbf{Motor DC 5 V}\\ {\scriptsize motorreductor TT}\\ {\scriptsize vel $\propto$ duty}};
+
+% ================= CARRIL C: C2 (24 -> 3.3 V, fluye a la izquierda) =================
+\node[esp] (g2) at (\xCtrl,\yC) {\textbf{GPIO5 IN}\\ {\scriptsize digitalRead + niega}};
+\node[opto] (o2) at (\xOpto,\yC) {\textbf{PC817 \#2}\\ {\scriptsize R\textsubscript{in}=4.7\,k$\Omega$}};
+\node[c2] (src24) at (\xPow,\yC) {\textbf{Senal 24 V}\\ {\scriptsize entrada de campo}\\ {\scriptsize excita el LED}};
+
+% ===================== FLECHAS =====================
+% firmware -> GPIOs
+\draw[flecha] (loop.south) -- ++(0,-0.5) -| (g1.north);
+\draw[flecha] (loop.south) -- ++(0,-0.5) -| (g3.north);
+% A: ->
+\draw[flecha] (g1) -- (o1) node[etiq,pos=0.5]{LED};
+\draw[flecha] (o1) -- (load1) node[etiq,pos=0.5]{24\,V};
+% B: ->
+\draw[flecha] (g3) -- (o3) node[etiq,pos=0.5]{PWM};
+\draw[flecha] (o3) -- (mosfet);
+\draw[flecha] (mosfet) -- (motor);
+% C: <- (entrada que viaja hacia el ESP)
+\draw[flecha] (src24) -- (o2) node[etiq,pos=0.5]{LED};
+\draw[flecha] (o2) -- (g2) node[etiq,pos=0.5]{3.3\,V};
+
+% ===================== BANDAS VERTICALES (zonas) =====================
+\begin{scope}[on background layer]
+  % lado control
+  \node[rounded corners=4pt, fill=colEspBg!45, draw=colEsp!35, dashed,
+        fit=(loop)(g1)(g3)(g2), inner sep=4mm,
+        label={[colEsp,font=\sffamily\bfseries\small]below:LADO CONTROL (ESP32-S3, GND\textsubscript{ESP})}] (zCtrl) {};
+  % barrera
+  \node[rounded corners=4pt, fill=colOptoBg!40, draw=colOpto!45, dashed,
+        fit=(o1)(o3)(o2), inner sep=4mm,
+        label={[colOpto,font=\sffamily\bfseries\small]below:BARRERA\\ (PC817)}] (zOpto) {};
+  % lado potencia / campo
+  \node[rounded corners=4pt, fill=colC3Bg!32, draw=colC3!35, dashed,
+        fit=(load1)(mosfet)(motor)(src24), inner sep=4mm,
+        label={[colC3,font=\sffamily\bfseries\small]below:LADO POTENCIA / CAMPO (GND\textsubscript{24V}, GND\textsubscript{motor})}] (zPow) {};
+\end{scope}
+
+% ===================== TITULO =====================
+\node[font=\sffamily\bfseries\large, text=colLinea, anchor=south west]
+   at ([yshift=5mm]zCtrl.north west)
+   {Programa ESP32-S3 -- Pr\'actica 4: convertidores de nivel 3.3\,$\leftrightarrow$\,24\,V y motor PWM con PC817};
+
+\end{tikzpicture}
+\end{document}

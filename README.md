@@ -8,6 +8,9 @@ Cada vez que un objeto **cruza el haz** entre el LED IR emisor y el
 fototransistor **WP7113P3C**, se incrementa una cuenta **0 → 9 → 0** que se
 muestra en un **display de 7 segmentos de cátodo común**.
 
+> **Práctica 4 (Semana 10)** — convertidores de nivel 3.3 V ↔ 24 V y motor PWM aislados con PC817:
+> programa, diagramas y guía guiada en [`practica4-convertidores-pc817/`](practica4-convertidores-pc817/).
+
 ## Guía guiada de la práctica (se llena y se entrega)
 
 En [`guia-practica2/`](guia-practica2/) está la **guía guiada** de la Práctica 2 (DOCX
