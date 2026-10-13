@@ -26,6 +26,14 @@ Dr. Rubén Estrada Marmolejo, CUCEI–UDG. Tres circuitos aislados con el optoac
 3. Abre `practica4_convertidores_pc817/practica4_convertidores_pc817.ino` y súbelo.
 4. Monitor Serial a **115200 bps** con **«Nueva línea»**; escribe `ayuda`.
 
+## ¿No tienes fuente de 24 V?
+
+Usa una de **12 V con las mismas resistencias**: los tres circuitos funcionan. El Circuito 1 satura con más margen (necesita 1.18 mA de 4.75 mA disponibles) y en el Circuito 2 el LED recibe ≈ 2.3 mA (la salida necesita 0.31 mA de ≈ 1.15 mA disponibles). Anota en la guía qué fuente usaste.
+
+## MOSFET del Circuito 3: IRLZ44N (canal N, nivel lógico)
+
+Visto de frente (letras hacia ti, patas abajo): **1 = G** (compuerta) → colector del PC817 y R_C de 10 kΩ a +5 V · **2 = D** (drenador, también la pestaña) → terminal (−) del motor y ánodo del flyback · **3 = S** (fuente) → GND del motor. Un IRFZ44N o IRF540 (sin «L») necesita ~10 V en la compuerta y no sirve con 5 V.
+
 ## Tres cosas que no se te pueden olvidar
 
 - **Las masas nunca se unen.** GND de la ESP32 por un lado; GND de 24 V y GND del motor por otro.
