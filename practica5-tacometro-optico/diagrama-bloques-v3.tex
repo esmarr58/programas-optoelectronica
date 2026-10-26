@@ -1,0 +1,31 @@
+\documentclass[border=10pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\definecolor{azul}{HTML}{1F6FB2}
+\definecolor{verde}{HTML}{0E8A6A}
+\begin{document}
+\begin{tikzpicture}[font=\sffamily,>=Latex,
+ b/.style={draw=azul,rounded corners,fill=azul!5,align=center,text width=4.3cm,minimum height=1.5cm,inner sep=6pt},
+ a/.style={->,thick,azul},n/.style={align=left,text width=17cm,font=\sffamily\small}]
+\node[font=\sffamily\bfseries\Large] at (6,2) {Práctica 5 v3 --- RC directo e interrupciones};
+\node[b] (pc) at (0,0) {\textbf{Monitor serie, 115200}\\vel, stop, rampa, ppr, filtro\\leer, estado, stream};
+\node[b] (esp) at (6,0) {\textbf{ESP32-S3 / Arduino 3.x}\\GPIO6: PWM 1\,kHz, 10 bits\\$d_{pin}=1023-\lfloor1023D/100\rfloor$};
+\node[b] (pot) at (12,0) {\textbf{C3 de P4: potencia}\\PC817 $\to$ IRLZ44N\\motor TT, 5\,V + flyback};
+\draw[a] (pc)--(esp);\draw[a] (esp)--(pot);
+\node[b,draw=verde,fill=verde!5] (disco) at (12,-3) {\textbf{Eje de salida y disco}\\4 blancos + 4 negros\\4 pulsos por vuelta (PPR)};
+\node[b,draw=verde,fill=verde!5] (sensor) at (6,-3) {\textbf{TCRT5000 + RC pasivo}\\Nodo A: 10\,k$\Omega$ a 3.3\,V\\10\,nF a GND\textsubscript{ESP}};
+\node[b,draw=verde,fill=verde!5] (adc) at (0,-3) {\textbf{Conexión directa a GPIO4}\\INPUT, IRQ FALLING\\oscuro $\to$ blanco};
+\draw[a] (pot)--(disco);\draw[a] (disco)--(sensor);\draw[a] (sensor)--(adc);
+\node[b] (det) at (0,-6) {\textbf{ISR: contarPulso()}\\crudos: cada IRQ atendida\\tiempo muerto inicial 500\,$\mu$s};
+\node[b] (cuenta) at (6,-6) {\textbf{Aceptados + marca GPIO5}\\cada aceptado conmuta marca\\portMUX: captura/reset};
+\node[b] (rpm) at (12,-6) {\textbf{Ventana $\ge1000$\,ms}\\$\mathrm{RPM}=\dfrac{60000N}{\mathrm{PPR}\,\Delta t_{ms}}$\\usar tiempo real transcurrido};
+\draw[a] (adc)--(det);\draw[a] (det)--(cuenta);\draw[a] (cuenta)--(rpm);
+\node[n] at (6,-8.4) {\textbf{Diagnóstico:} nodo A $\to$ GPIO10 ADC1\_CH9 a 10\,Hz, no cuenta. ISR sin ADC, Serial, float ni memoria dinámica; usa timestamp, conteos y GPIO5. \texttt{estado}: crudos\_total, pulsos\_total (aceptados), rechazados\_total.};
+\node[n] at (6,-9.8) {\textbf{RC:} un $C_F=10$\,nF entre C y E; $\tau_{subida}\approx100\,\mu$s, caída depende de luz. \texttt{filtro 0..100000} configura tiempo muerto, \textbf{no histéresis ni ancho de pulso}; solo con PWM0/rampa inactiva. Puede aceptar ruido aislado. Límite aritmético a 500\,$\mu$s/4\,PPR: 30000\,RPM, no capacidad garantizada.};
+\node[n] at (6,-11.4) {\textbf{Evidencia obligatoria:} osciloscopio CH1 nodo A, CH2 GPIO5, tierras GND\textsubscript{ESP}; cada cambio de marca = un aceptado. Comparar con/sin $C_F$ y filtro 0/500, sin forzar ruido. CSV de 7 campos conserva RPM aceptadas. \textbf{Pull-up de C3 puede activar motor durante reset:} conectar fuente al final y quitar antes de reset/carga/cambiar $C_F$.};
+\end{tikzpicture}
+\end{document}

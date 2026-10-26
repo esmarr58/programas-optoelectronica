@@ -11,6 +11,10 @@ muestra en un **display de 7 segmentos de cátodo común**.
 > **Práctica 4 (Semana 10)** — convertidores de nivel 3.3 V ↔ 24 V y motor PWM aislados con PC817:
 > programa, diagramas y guía guiada en [`practica4-convertidores-pc817/`](practica4-convertidores-pc817/).
 
+> **Práctica 5 (Semana 11)** — tacómetro óptico con TCRT5000 e **interrupciones externas** (IRQ FALLING en GPIO4,
+> filtro por tiempo muerto, marcador en GPIO5 para el osciloscopio) sobre el motor del circuito 3 de la P4:
+> programa, diagramas, disco de 4 PPR y guía guiada en [`practica5-tacometro-optico/`](practica5-tacometro-optico/).
+
 ## Guía guiada de la práctica (se llena y se entrega)
 
 En [`guia-practica2/`](guia-practica2/) está la **guía guiada** de la Práctica 2 (DOCX

@@ -1,0 +1,55 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=22mm]{geometry}
+\usepackage{lmodern,tikz}
+\usetikzlibrary{babel}
+\usepackage{xcolor}
+\definecolor{optoemit}{HTML}{C9601F}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\begin{document}
+{\LARGE\bfseries Práctica 5: disco óptico de 4 PPR}\par
+\smallskip
+{\large Optoelectrónica 2026B · ESP32-S3 + TCRT5000}\par
+\bigskip
+Imprime a \textbf{tamaño real (100\,\%)}. Desactiva ``ajustar a página''.
+Comprueba con una regla que la barra inferior mida 50\,mm antes de recortar.
+\begin{center}
+\begin{tikzpicture}[x=1mm,y=1mm]
+\fill[white] (0,0) circle[radius=40];
+\foreach \a in {0,90,180,270}{
+  \fill[black] (0,0) -- (\a:40) arc[start angle=\a,end angle=\a+45,radius=40] -- cycle;
+}
+\draw[thin] (0,0) circle[radius=40];
+\filldraw[fill=white,draw=black] (0,0) circle[radius=5];
+\draw[thin] (-3,0)--(3,0) (0,-3)--(0,3);
+\draw[<->] (-40,-47)--(40,-47);
+\node[below] at (0,-47){\small Diámetro: 80\,mm};
+\end{tikzpicture}
+\end{center}
+\textbf{Montaje.} Pega sobre un soporte ligero, plano y opaco. Adapta la fijación
+al \textbf{eje de salida del motorreductor TT}. La cruz indica el centro, no el
+diámetro de un agujero. Mantén el disco sujeto y sin roce con el sensor.
+\medskip
+
+\textbf{Pista óptica.} Apunta el TCRT5000 hacia la zona de sectores, lejos del
+centro y del borde. Empieza cerca de 2.5\,mm y ajusta con mediciones de blanco y
+negro: la tinta negra visible puede reflejar infrarrojo. El contraste medido
+debe cruzar ambos umbrales de histéresis.
+\medskip
+
+\textbf{Conteo.} Hay cuatro sectores blancos separados por cuatro negros.
+Cuenta solo la entrada a blanco (tensión de colector descendente):
+\textbf{4 pulsos por vuelta}, no 8. Sin alimentar el motor, gira lentamente una
+vuelta completa y comprueba un incremento de 4 en \texttt{pulsos\_total}.
+\begin{center}
+\begin{tikzpicture}[x=1mm,y=1mm]
+\draw[line width=0.7pt] (0,0)--(50,0);
+\foreach \x in {0,10,20,30,40,50}{\draw (\x,-2)--(\x,2);}
+\node[below] at (25,-3){\small Barra de comprobación: 50\,mm};
+\end{tikzpicture}
+\end{center}
+{\footnotesize Dr. Rubén Estrada Marmolejo · CUCEI, Universidad de Guadalajara.}
+\end{document}

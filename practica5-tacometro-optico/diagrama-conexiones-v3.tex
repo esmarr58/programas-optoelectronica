@@ -1,0 +1,64 @@
+\documentclass[a4paper,landscape,10pt]{article}
+\usepackage[margin=12mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage{circuitikz}
+\usetikzlibrary{calc,arrows.meta}
+\pagestyle{empty}
+\definecolor{azul}{HTML}{1F6FB2}
+\definecolor{cafe}{HTML}{8E5A12}
+\begin{document}\sffamily
+\begin{center}\Large\bfseries Práctica 5 v3 --- TCRT5000 + RC directo + IRQ FALLING\end{center}
+\noindent\textbf{ESP32-S3:} GPIO4 IRQ FALLING; GPIO5 marcador; GPIO6 PWM 1\,kHz/10\,bits; GPIO10 ADC1\_CH9 diagnóstico. \textbf{Tierras separadas.}
+\begin{center}
+\begin{circuitikz}[font=\sffamily\small,>=Latex]
+% C3, sin simplificar su inversion.
+\node[draw,minimum width=2.1cm,minimum height=2.0cm,align=center] (pc) at (4.7,5.0) {PC817\\aislamiento\\óptico};
+\coordinate (p1) at (3.65,5.55);\coordinate (p2) at (3.65,4.45);
+\coordinate (p4) at (5.75,5.55);\coordinate (p3) at (5.75,4.45);
+\node[anchor=west,font=\sffamily\scriptsize] at (p1) {1 A};
+\node[anchor=west,font=\sffamily\scriptsize] at (p2) {2 K};
+\node[anchor=east,font=\sffamily\scriptsize] at (p4) {C 4};
+\node[anchor=east,font=\sffamily\scriptsize] at (p3) {E 3};
+\draw[azul] (0,5.55) node[left]{GPIO6} to[R,l=220\,$\Omega$] (p1);
+\draw[azul] (p2) -- (2.9,4.45) -- (2.9,3.7) node[ground]{} node[below]{GND\textsubscript{ESP}};
+\draw (p4) -- (7,5.55) coordinate(gate) to[R,l_=10\,k$\Omega$] (7,7) node[above]{+5\,V motor};
+\node[nmos] (mos) at (10.2,5){};
+\draw (gate) -- (mos.G |- gate) -- (mos.G);
+\fill (gate) circle(1.5pt);
+\node[align=left,anchor=west] at (11.0,4.8) {IRLZ44N\\1=G, 2=D, 3=S\\frente marcado; patas abajo};
+\draw[cafe] (p3) -- (6.4,4.45) -- (6.4,3.7) node[ground]{} node[below]{GND\textsubscript{motor}};
+\draw[cafe] (mos.S) -- ++(0,-0.8) node[ground]{} node[below]{GND\textsubscript{motor}};
+\draw (mos.D) -- ++(0,0.3) coordinate(drain) to[generic,l_=Motor TT] ++(0,1.6) coordinate(vmotor);
+\draw (vmotor) -- ++(0,0.35) node[above]{+5\,V motor};
+\draw (drain) -- ++(2.1,0) coordinate(fly) to[D,l_=D1] (fly |- vmotor) -- (vmotor);
+\node[anchor=west,align=left,font=\sffamily\scriptsize] at (13.1,7.6) {D1 flyback: cátodo (banda) a +5\,V; ánodo a drain / motor($-$).\\Dimensionar para corriente del motor.};
+\node[draw=azul,dashed,align=left,text width=7.4cm,inner sep=6pt] at (19,5.3) {\textbf{Lógica de C3}\par GPIO6 HIGH $\to$ LED ON $\to$ PC817 conduce $\to$ gate bajo $\to$ MOSFET OFF.\par GPIO6 LOW $\to$ LED OFF $\to$ pull-up eleva gate $\to$ motor ON.\par Firmware invierte el ciclo PWM. La compuerta se verifica respecto a GND\textsubscript{motor}.};
+% Sensor discreto: etiquetas funcionales, remitir vista superior exacta fabricante.
+\draw[azul] (0,0.7) node[left]{3V3} to[R,l=220\,$\Omega$] (2.5,0.7) to[leD,l_=LED IR] (2.5,-1.4)
+ -- (2.5,-1.8) node[ground]{} node[below]{GND\textsubscript{ESP}};
+\node[anchor=west] at (2.7,0.5) {A};\node[anchor=west] at (2.7,-1.2) {K};
+\node[npn] (photo) at (7,-0.6){};
+\draw[->,dashed,azul] (3.3,0) -- (photo.B);
+\node[font=\sffamily\scriptsize,align=center] at (4.7,0.7) {luz IR reflejada\\en disco del eje};
+\draw[azul] (photo.C) -- ++(0,0.5) coordinate(vc) to[R,l_=10\,k$\Omega$] ++(0,1.45) node[above]{3V3};
+\draw[azul] (vc) -- ++(2,0) coordinate(nodoA);
+\fill[azul] (nodoA) circle (1.8pt);
+\draw[azul] (nodoA) -- ++(0,1.4) node[above]{GPIO10, ADC 10\,Hz};
+\draw[azul] (nodoA) to[C,l={$C_F=10$\,nF}] ++(0,-2.25) node[ground]{} node[below]{GND\textsubscript{ESP} = E};
+\draw[azul] (nodoA) -- ++(3,0) node[above,font=\sffamily\scriptsize]{GPIO4 INPUT / FALLING};
+\node[draw=azul,dashed,align=left,text width=8.4cm,inner sep=6pt] at (18.5,-0.2) {\textbf{Evidencia con osciloscopio}\par CH1: nodo A / GPIO4.\par CH2: GPIO5, salida marcadora.\par Ambas tierras: GND\textsubscript{ESP}.\par Cada \textbf{cambio} de GPIO5 = 1 pulso aceptado. Su frecuencia cuadrada es la mitad de la frecuencia de pulsos. Rechazados no cambian la marca.};
+\fill (vc) circle (1.5pt);
+\draw[azul] (photo.E) -- ++(0,-0.65) node[ground]{} node[below]{GND\textsubscript{ESP}};
+\node[anchor=west] at ($(photo.C)+(0.05,0)$) {C};
+\node[anchor=west] at ($(photo.E)+(0.05,0)$) {E};
+\node[draw=azul,dashed,align=left,text width=22.5cm,inner sep=6pt] at (11.7,-4.0) {\textbf{TCRT5000 discreto:} A/K y C/E según vista superior Vishay. Blanco: colector bajo; negro: colector alto. \textbf{Nodo A} va directamente a GPIO4 y GPIO10; ADC no cuenta. Un solo condensador $C_F$ entre colector C y emisor E (GND\textsubscript{ESP}).\\
+\textbf{RC:} subida $\tau\approx100\,\mu$s; $f_c\approx1.59$\,kHz ideal. Caída depende de corriente óptica. No hay comparador ni histéresis externa; no garantiza eliminar ruido PWM a 1\,kHz. \texttt{filtro 500} añade \textbf{tiempo muerto} desde el último aceptado: no mide ancho de pulso y puede aceptar un primer pico aislado.\\
+\textbf{Comparación obligatoria 2$\times$2:} con/sin $C_F$ y \texttt{filtro 0}/\texttt{filtro 500}. Registrar CH1/CH2, conteos crudos, aceptados y rechazados a giro comparable. Si no aparece ruido, documentar cero. Desconectar fuente motor para cambiar $C_F$; no quitar flyback ni provocar fallas. C1/C2 de P4 no se conectan; no usar 24\,V.};
+\end{circuitikz}
+\end{center}
+\vspace{-2mm}
+\noindent\textbf{Montaje:} sin fuente motor, cargar código y comprobar \texttt{stop}; girar disco manualmente y ajustar geometría/contraste IR. Conectar los 5\,V del motor al final. Desconectar esa fuente antes de reset, carga o cambio de cables. \textbf{El pull-up de gate puede activar el motor durante reset o pérdida de alimentación del ESP32.} Este circuito no ofrece apagado garantizado por hardware.\par\smallskip
+\noindent\footnotesize Fuentes: Vishay TCRT5000 (83760); Sharp PC817 (1 A, 2 K, 3 E, 4 C); Infineon IRLZ44N; Espressif GPIO/ADC. No alimentar GPIO4 ni GPIO10 a 5\,V. Entrada ADC: 0--3.3\,V eléctrico; rango útil aproximado a 11\,dB hasta 3.1\,V (recorte posible sobre negro).
+\end{document}
