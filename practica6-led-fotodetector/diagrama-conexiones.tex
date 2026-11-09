@@ -1,0 +1,92 @@
+% Practica 6 v2 · Diagrama de conexiones: LED como fotodetector, TIA con LM358 a 5 V
+% Optoelectronica V3736 · 2026B · Dr. Ruben Estrada Marmolejo
+\documentclass[border=10pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[europeanresistors,americanvoltages]{circuitikz}
+\usepackage{xcolor}
+\definecolor{optosignal}{HTML}{2A5CAA}
+\definecolor{optoemit}{HTML}{C9601F}
+\definecolor{optoalert}{HTML}{B23A34}
+\definecolor{optodetect}{HTML}{6B4C9A}
+\definecolor{optoink}{HTML}{1C1F24}
+\definecolor{optoconfirm}{HTML}{3E7C59}
+\definecolor{optorule}{HTML}{D8DBE0}
+\usetikzlibrary{calc,positioning}
+\begin{document}
+\begin{circuitikz}[every node/.style={font=\small},line width=0.6pt]
+% ===================== 1. Emisor =====================
+\node[font=\bfseries,text=optoink,anchor=west] at (-2.6,7.6) {1. LED emisor (rojo, verde, azul o blanco)};
+\draw (0,6.4) node[above]{$+5$ V} to[R,l_={220 $\Omega$}] (0,4.8) to[led,l_={\textbf{EMISOR}},color=optoemit] (0,3.2) coordinate (k);
+\node[npn,anchor=C] (q) at (k) {};
+\draw (q.E) -- ++(0,-0.3) node[ground]{};
+\draw (q.B) to[R,l={4.7 k$\Omega$},-o] ++(-2.0,0) node[above]{GPIO5};
+\node[align=left,font=\footnotesize,anchor=north west] at (-2.6,0.7) {NPN 2N2222A o BC547 (verifica E-B-C).\\
+$I_F\approx(5-V_F-0.1)/220$: rojo $\approx13$ mA;\\verde, azul y blanco $\approx8$--9 mA. Mídela.\\Tierra del emisor: cable aparte al GND de la ESP32.};
+\draw[optoemit,dashed,very thick,-latex] (0.9,4.0) -- node[above,font=\footnotesize,text=optoemit,align=center]{luz: emisor y detector\\nariz con nariz en un tubo negro} (6.8,4.0);
+
+% ===================== 2. Referencia =====================
+\node[font=\bfseries,text=optoink,anchor=west] at (-2.6,-3.0) {2. Pedestal $V_{ref}\approx1.0$ V (mitad B del LM358)};
+\node[op amp,noinv input up] (ob) at (3.0,-6.2) {};
+\node[font=\footnotesize] at (3.15,-6.2) {\textbf{B}};
+\node[font=\footnotesize,above left,inner sep=1pt] at (ob.+) {5};
+\node[font=\footnotesize,below left,inner sep=1pt] at (ob.-) {6};
+\node[font=\footnotesize,above right,inner sep=1pt] at (ob.out) {7};
+\draw (ob.+) -- ++(-1.4,0) coordinate (dv);
+\draw (dv) to[R,l_={39 k$\Omega$},*-] ++(0,1.8) node[above]{$+5$ V};
+\draw (dv) to[R,l={10 k$\Omega$}] ++(0,-1.9) node[ground]{};
+\draw (dv) -- ++(-1.6,0) to[C,l_={1 $\mu$F}] ++(0,-1.9) node[ground]{};
+\draw (ob.-) -- ++(-0.3,0) -- ++(0,-0.9) -| (ob.out);
+\draw (ob.out) to[short,*-o] ++(1.4,0) coordinate (vr) node[right]{\textbf{$V_{ref}$} $\rightarrow$ pin 3, J1-FV y (por 10 k$\Omega$) GPIO6};
+
+% ===================== 3. TIA =====================
+\node[font=\bfseries,text=optoink,anchor=west] at (7.0,7.6) {3. TIA con la mitad A del LM358 ($+5$ V, una sola fuente)};
+\node[op amp] (oa) at (13.0,1.4) {};
+\node[font=\footnotesize] at (13.15,1.4) {\textbf{A}};
+\node[font=\footnotesize,above left,inner sep=1pt] at (oa.-) {2};
+\node[font=\footnotesize,below left,inner sep=1pt] at (oa.+) {3};
+\node[font=\footnotesize,below right,inner sep=1pt] at (oa.out) {1};
+\draw (oa.up) -- ++(0,0.3) node[vcc]{\footnotesize $+5$ V (pin 8)};
+\draw (oa.down) -- ++(0,-0.5) node[ground]{} node[right=4pt,font=\footnotesize]{pin 4};
+\draw (oa.+) -- ++(-0.6,0) node[left,font=\footnotesize]{$V_{ref}$};
+\draw (oa.-) -- ++(-2.6,0) coordinate (N);
+\draw (N) to[short,*-] ++(0,2.4) coordinate (r1) to[R,l={$R_f$ = 10 M$\Omega$ (o 1 M$\Omega$)}] (r1 -| oa.out) coordinate (r2);
+\draw (r1) to[short,*-] ++(0,1.7) coordinate (c1) to[C,l={$C_f$ = 1 nF}] (c1 -| oa.out) -- (r2);
+\draw (r2) to[short,*-] (oa.out);
+\node[above,font=\footnotesize,text=optosignal] at ($(N)+(1.0,0.02)$) {nodo en $V_{ref}$};
+\draw (N) to[photodiode,l_={\textbf{LED DETECTOR}},invert,color=optodetect] ++(0,-2.6) coordinate (A);
+\node[right,font=\footnotesize,text=optodetect] at ($(N)+(0.25,-0.55)$) {K (cátodo, pata corta)};
+\node[right,font=\footnotesize,text=optodetect] at ($(A)+(0.25,0.45)$) {A (ánodo)};
+\fill (A) circle (2.2pt);
+\coordinate (fv) at ($(A)+(-1.6,-1.4)$);
+\coordinate (fc) at ($(A)+(1.6,-1.4)$);
+\draw (fv) circle (3pt); \draw (fc) circle (3pt);
+\draw[optoconfirm,line width=2.2pt] (A) -- ($(fv)!3pt!(A)$);
+\draw[optoalert,line width=1.4pt,dashed] (A) -- ($(fc)!3pt!(A)$);
+\node[font=\footnotesize\bfseries,text=optoink] at ($(A)+(0,-0.55)$) {J1};
+\node[left,font=\footnotesize,text=optoconfirm,align=right] at ($(fv)+(-0.15,0.25)$) {\textbf{FV}: a $V_{ref}$\\0 V en el LED};
+\node[right,font=\footnotesize,text=optoalert,align=left] at ($(fc)+(0.15,0.25)$) {\textbf{FC}: a GND\\$\approx1$ V en inversa};
+\draw ($(fv)+(0,-0.1)$) -- ++(0,-0.6) node[below,font=\footnotesize]{$V_{ref}$};
+\draw ($(fc)+(0,-0.1)$) -- ++(0,-0.6) node[ground]{};
+
+% ===================== 4. Lectura =====================
+\draw (oa.out) to[short,-*] ++(1.0,0) coordinate (vo);
+\node[below,font=\footnotesize,text=optosignal,align=center] at ($(vo)+(0,-0.15)$) {$V_o$ = TP\\multímetro};
+\draw (vo) to[R,l={10 k$\Omega$}] ++(2.6,0) coordinate (adc);
+\draw (adc) to[short,*-o] ++(1.6,0) node[right]{GPIO4 (ADC)};
+\draw (adc) to[R,l_={22 k$\Omega$}] ++(0,-2.2) node[ground]{};
+\node[align=left,font=\footnotesize,text=optoink,anchor=north west] at ($(vo)+(0.6,-2.9)$) {Divisor: $V_{ADC}=0.6875\,V_o$.\\
+Con $V_o\le3.7$ V el pin queda $\le2.55$ V.\\
+El programa multiplica por 1.4545.};
+
+% ===================== Notas =====================
+\node[draw=optorule,rounded corners,align=left,font=\footnotesize,text width=9.4cm,anchor=north west,inner sep=5pt] at (12.4,-4.4) {%
+\textbf{LM358 (DIP-8):} 1 OUT A · 2 IN$-$ A · 3 IN$+$ A · 4 GND · 5 IN$+$ B · 6 IN$-$ B · 7 OUT B · 8 $V_{CC}$ (+5 V).\\
+\textbf{Alimentación:} pin 5V de la placa ESP32-S3 (USB) y GND común. 100 nF de pin 8 a GND.\\
+\textbf{Salida del TIA:} $V_o=V_{ref}+(I_{ph}-I_B)R_f$. La salida del LM358 va de $\approx0$ a $\approx3.3$--3.5 V.\\
+\textbf{Detector y emisor:} en el tubo, fuera de la protoboard, con cables dupont cortos ($\le5$ cm); mismo tope; cambia LED con el emisor apagado.\\
+\textbf{J1:} cambia el modo; el resto del circuito no se toca.};
+\end{circuitikz}
+\end{document}
