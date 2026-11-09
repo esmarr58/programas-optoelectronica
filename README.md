@@ -15,6 +15,11 @@ muestra en un **display de 7 segmentos de cátodo común**.
 > filtro por tiempo muerto, marcador en GPIO5 para el osciloscopio) sobre el motor del circuito 3 de la P4:
 > programa, diagramas, disco de 4 PPR y guía guiada en [`practica5-tacometro-optico/`](practica5-tacometro-optico/).
 
+> **Práctica 6 (Semana 13)** — amplificador de transimpedancia con **BPW34 y TL072** (±12 V): un solo circuito
+> mide la fotocorriente con LED **rojo, verde y azul** en modo **fotovoltaico** y **fotoconductivo** (puente J1);
+> la ESP32-S3 enciende cada color, lee el ADC protegido y resta el oscuro, como el espectrómetro del proyecto:
+> programa, diagramas y guía guiada en [`practica6-transimpedancia-rgb/`](practica6-transimpedancia-rgb/).
+
 ## Guía guiada de la práctica (se llena y se entrega)
 
 En [`guia-practica2/`](guia-practica2/) está la **guía guiada** de la Práctica 2 (DOCX

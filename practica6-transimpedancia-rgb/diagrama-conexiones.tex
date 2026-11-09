@@ -1,0 +1,96 @@
+% Practica 6 · Diagrama de conexiones: un solo TIA (BPW34 + TL072) y tres LED
+% Optoelectronica V3736 · 2026B · Dr. Ruben Estrada Marmolejo
+\documentclass[border=10pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[europeanresistors,americanvoltages]{circuitikz}
+\usepackage{xcolor}
+\definecolor{optosignal}{HTML}{2A5CAA}
+\definecolor{optoemit}{HTML}{C9601F}
+\definecolor{optoalert}{HTML}{B23A34}
+\definecolor{optodetect}{HTML}{6B4C9A}
+\definecolor{optoink}{HTML}{1C1F24}
+\definecolor{optoconfirm}{HTML}{3E7C59}
+\definecolor{optorule}{HTML}{D8DBE0}
+\usetikzlibrary{calc,positioning}
+\begin{document}
+\begin{circuitikz}[every node/.style={font=\small},line width=0.6pt]
+% ===================== Excitadores de LED (ESP32 -> NPN -> LED) =====================
+\node[font=\bfseries,text=optoink,anchor=west] at (-2.6,8.0) {1. Excitadores de LED (ESP32-S3 $\rightarrow$ NPN $\rightarrow$ LED)};
+\foreach \x/\col/\nom/\gp/\i in {0/red!75!black/rojo/GPIO5/1, 4.4/green!55!black/verde/GPIO6/2, 8.8/blue!75!black/azul/GPIO7/3}{
+  \draw (\x,6.6) node[above]{$+12$ V} to[R,l_={1 k$\Omega$}] (\x,5.0)
+        to[led,l_={\color{\col}\textbf{\nom}},color=\col] (\x,3.4) coordinate (k\i);
+  \node[npn,anchor=C] (q\i) at (k\i) {};
+  \draw (q\i.E) -- ++(0,-0.3) node[ground]{};
+  \draw (q\i.B) to[R,l={4.7 k$\Omega$},-o] ++(-2.0,0) node[above]{\gp};
+}
+\node[align=left,font=\footnotesize,text=optoink,anchor=north west] at (-2.6,0.85) {NPN 2N2222A o BC547: verifica E-B-C en su hoja de datos. Emisores a GND.\\
+$I_F\approx(12-V_F-0.1\,\mathrm{V})/1\,\mathrm{k}\Omega\approx 9$--$10$ mA (mídela en cada color).};
+% luz hacia el detector
+\draw[optoemit,dashed,very thick,-latex] (9.6,5.6) to[bend left=10] node[above,sloped,font=\footnotesize,text=optoemit,align=center]{luz: los 3 LED juntos, en un tubo negro,\\a la misma distancia del BPW34} (14.6,3.2);
+
+% ===================== TIA =====================
+\node[font=\bfseries,text=optoink,anchor=west] at (13.6,8.0) {2. Amplificador de transimpedancia (TIA)};
+\node[op amp] (oa) at (19,1.4) {};
+\node[font=\footnotesize] at (19.15,1.4) {\textbf{TL072}};
+\node[font=\footnotesize,above left,inner sep=1pt] at (oa.-) {2};
+\node[font=\footnotesize,below left,inner sep=1pt] at (oa.+) {3};
+\node[font=\footnotesize,below right,inner sep=1pt] at (oa.out) {1};
+\draw (oa.up) -- ++(0,0.3) node[vcc]{\footnotesize $+12$ V (pin 8)};
+\draw (oa.down) -- ++(0,-0.5) node[vee]{\footnotesize $-12$ V (pin 4)};
+\draw (oa.+) -- ++(-0.5,0) -- ++(0,-0.5) node[ground]{};
+\draw (oa.-) -- ++(-2.6,0) coordinate (N);
+% realimentacion: Rf || Cf
+\draw (N) to[short,*-] ++(0,2.4) coordinate (r1) to[R,l={$R_f$: 100 k$\Omega$ \textbf{o} 10 M$\Omega$}] (r1 -| oa.out) coordinate (r2);
+\draw (r1) to[short,*-] ++(0,1.7) coordinate (c1) to[C,l={$C_f$ = 10 pF}] (c1 -| oa.out) -- (r2);
+\draw (r2) to[short,*-] (oa.out);
+\node[above,font=\footnotesize,text=optosignal] at ($(N)+(1.0,0.02)$) {tierra virtual};
+% fotodiodo: catodo a la entrada inversora
+\draw (N) to[photodiode,l_={\textbf{BPW34}},invert] ++(0,-2.6) coordinate (A);
+\node[right,font=\footnotesize,text=optodetect] at ($(N)+(0.15,-0.55)$) {K (cátodo)};
+\node[right,font=\footnotesize,text=optodetect] at ($(A)+(0.15,0.45)$) {A (ánodo)};
+% puente J1
+\fill (A) circle (2.2pt);
+\coordinate (fv) at ($(A)+(-1.6,-1.4)$);
+\coordinate (fc) at ($(A)+(1.6,-1.4)$);
+\draw (fv) circle (3pt); \draw (fc) circle (3pt);
+\draw[optoconfirm,line width=2.2pt] (A) -- ($(fv)!3pt!(A)$);
+\draw[optoalert,line width=1.4pt,dashed] (A) -- ($(fc)!3pt!(A)$);
+\node[font=\footnotesize\bfseries,text=optoink] at ($(A)+(0,-0.55)$) {J1};
+\node[left,font=\footnotesize,text=optoconfirm,align=right] at ($(fv)+(-0.15,0.25)$) {\textbf{FV}\\fotovoltaico};
+\node[right,font=\footnotesize,text=optoalert,align=left] at ($(fc)+(0.15,0.25)$) {\textbf{FC}\\fotoconductivo};
+\draw ($(fv)+(0,-0.1)$) -- ++(0,-0.6) node[ground]{};
+\draw ($(fc)+(0,-0.1)$) -- ++(0,-0.7) coordinate (vb);
+\draw (vb) to[R,l_={$R_B$ = 10 k$\Omega$},*-] ++(0,-2.0) node[vee]{};
+\node[font=\footnotesize,anchor=west] at ($(vb)+(0.2,-2.55)$) {$-12$ V};
+\draw (vb) -- ++(2.0,0) to[C,l={$C_B$ = 100 nF}] ++(0,-2.0) node[ground]{};
+\node[font=\footnotesize,text=optoalert,anchor=south west] at ($(vb)+(0.1,0.0)$) {$V_B$};
+
+% ===================== Salida y proteccion del ADC =====================
+\node[font=\bfseries,text=optoink,anchor=west] at (22.4,8.0) {3. Protección y lectura del ADC};
+\draw (oa.out) to[short,-*] ++(1.0,0) coordinate (vo);
+\node[below,font=\footnotesize,text=optosignal,align=center] at ($(vo)+(0,-0.15)$) {$V_o$ = TP\\multímetro\\osciloscopio};
+\draw (vo) to[R,l={$R_S$ = 10 k$\Omega$}] ++(2.8,0) coordinate (adc);
+\draw (adc) to[short,*-] ++(1.5,0) coordinate (adc2) to[short,*-] ++(1.7,0) coordinate (adc3) to[short,*-o] ++(1.6,0) node[right]{GPIO4 (ADC)};
+\draw (adc) to[sD,l={D1}] ++(0,2.2) node[above]{3V3 (ESP32)};
+\draw (adc2) to[sD,l_={D2},invert] ++(0,-2.2) node[ground]{};
+\draw (adc3) to[C,l={$C_S$ 100 nF}] ++(0,-2.2) node[ground]{};
+\node[align=left,font=\footnotesize,text=optoink,anchor=north west] at ($(vo)+(1.2,-2.9)$) {D1, D2: Schottky BAT85 o BAT43 (o 1N5819 de la P4/P5, con más fuga).\\
+Ajusta la distancia para que $V_o\le 2.8$ V\\con el color más intenso.\\
+La salida del TL072 \textbf{nunca} va directa a la ESP32.};
+
+% ===================== Notas =====================
+\node[draw=optorule,rounded corners,align=left,font=\footnotesize,text width=10.4cm,anchor=north west,inner sep=5pt] at (-2.6,-0.9) {%
+\textbf{TL072 (DIP-8):} 1 OUT A · 2 IN$-$ A · 3 IN$+$ A · 4 $V_{CC-}$ · 5 IN$+$ B · 6 IN$-$ B · 7 OUT B · 8 $V_{CC+}$.\\
+\textbf{BPW34:} identifica A y K con la prueba de diodo del multímetro (punta roja en A: 0.4--0.7 V) y con el dibujo de la hoja de datos.\\
+\textbf{J1:} FV = ánodo a GND ($V_R=0$). FC = ánodo a $V_B\approx-12$ V por $R_B$ ($V_R\approx12$ V). Cambia J1 con la fuente apagada.\\
+\textbf{$R_f$:} 100 k$\Omega$ con los LED; 10 M$\Omega$ solo para la prueba en oscuridad.};
+\node[draw=optorule,rounded corners,align=left,font=\footnotesize,text width=10.4cm,anchor=north west,inner sep=5pt] at (-2.6,-4.1) {%
+\textbf{Fuente dual:} dos canales en serie; el punto medio es GND (0 V) y se une al GND de la ESP32. Retira los puentes de los bornes a tierra/chasis.\\
+\textbf{Desacoplo:} 100 nF de pin 8 a GND y de pin 4 a GND, junto al TL072.\\
+\textbf{Mitad B sin usar:} pin 5 a GND y pin 6 unido a pin 7 (seguidor).\\
+\textbf{Orden:} USB primero, después $\pm12$ V; al terminar, $\pm12$ V fuera primero.};
+\end{circuitikz}
+\end{document}
